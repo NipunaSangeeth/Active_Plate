@@ -1,0 +1,15 @@
+export {default as LogingBg } from "./img/LoginBg.jpg";
+export {default as Logo_01 } from "./img/Logo_01.png";
+export {default as avatar } from "./img/avatar.png";
+export {default as mealPlan } from "./img/mealPlan.jpg";
+export {default as Exercise } from "./img/Exercise.jpg";
+export {default as Combined } from "./img/Combined-1.jpg";
+export {default as KosalaCom } from "./img/KosalaCom.png";
+export {default as Capture1Co } from "./img/Capture1Co.jpg";
+export {default as Capture2 } from "./img/Capture2.jpg";
+export {default as PlusIcon } from "./img/plus-icon.png";
+export {default as Email } from "./img/Email.png";
+export {default as Fb } from "./img/Fb.png";
+export {default as Insta } from "./img/Insta.png";
+export {default as LogingBg2 } from "./img/LogingBg2.PNG";
+export {default as Logo_02 } from "./img/Logo_02.png";
