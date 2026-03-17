@@ -5,7 +5,7 @@ import { FaEnvelope, FaLock, FcGoogle } from "../assets/icons";
 import { motion } from "framer-motion";
 import { buttonClick } from "../animations";
 
-import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { app } from "../config/firebase.config";
 import { validateUserJWTToken } from "../api";
 import { useNavigate } from "react-router-dom";
@@ -34,46 +34,57 @@ const Login = () => {
       navigate("/", { replace: true });
     }
   }, [user]);
-
+ 
+  /**
+   * Google Authentication Handler
+   * Triggers Firebase signInWithPopup.
+   * Dispatches direct credentials to Redux on complete to run Serverless.
+   */
   const loginWithGoogle = async () => {
-    await signInWithPopup(firebaseAuth, provider).then((userCred) => {
-      firebaseAuth.onAuthStateChanged((cred) => {
-        if (cred) {
-          cred.getIdToken().then((token) => {
-            validateUserJWTToken(token).then((data) => {
-              dispatch(setUserDetails(data));
-            });
-            navigate("/", { replace: true });
-          });
-        }
-      });
-    });
+    try {
+      const userCred = await signInWithPopup(firebaseAuth, provider);
+      if (userCred?.user) {
+        dispatch(setUserDetails(userCred.user));
+        navigate("/", { replace: true });
+      }
+    } catch (error) {
+      console.error("Google Login Error:", error);
+    }
   };
-
+ 
+  /**
+   * Email and Password Signup Handler
+   * Creates Firebase auth records, solves Username extraction, and 
+   * caches local alert catches fallback securely.
+   */
   const signUpWithEmailPass = async () => {
     if (userEmail === "" || password === "" || confirm_password === "" ){
       dispatch(alertInfo("Required field should not be empty"));
     }else{
       if(password === confirm_password){
-        setUserEmail("");
-        setconfirm_password("");
-        setpassword("");
         await createUserWithEmailAndPassword(
-          firebaseAuth, 
-          userEmail, 
+          firebaseAuth,
+          userEmail,
           password
-          ).then(userCred => {
-          firebaseAuth.onAuthStateChanged((cred) => {
-            if (cred) {
-              cred.getIdToken().then((token) => {
-                validateUserJWTToken(token).then((data) => {
-                  dispatch(setUserDetails(data));
-                });
-                navigate("/", { replace: true });
-              });
-            }
+          ).then(async (userCred) => {
+             // Extract Name from Email before @
+             const nameFromEmail = userEmail.split("@")[0];
+             const nameToSave = nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
+
+             if(firebaseAuth.currentUser){
+               await updateProfile(firebaseAuth.currentUser, {
+                 displayName: nameToSave
+               });
+             }
+             dispatch(setUserDetails(firebaseAuth.currentUser));
+             navigate("/", { replace: true });
+          }).catch((err) => {
+             console.error("Sign Up Error:", err);
+             dispatch(alertWarning(err.message));
           });
-        })
+          setUserEmail("");
+          setconfirm_password("");
+          setpassword("");
       }else{
         dispatch(alertWarning("Password doesn't match"));
       }
@@ -81,26 +92,27 @@ const Login = () => {
   };
 
   //
-
+ 
+  /**
+   * Email and Password Login Handler
+   * Triggers Firebase direct signIn, bypassing Node API loopbacks.
+   */
   const signInWithEmailAndPass = async () => {
     if (userEmail !== "" && password !== "") {
-      await signInWithEmailAndPassword(firebaseAuth, userEmail, password).then(userCred => {
-        firebaseAuth.onAuthStateChanged((cred) => {
-          if (cred) {
-            cred.getIdToken().then((token) => {
-              validateUserJWTToken(token).then((data) => {
-                dispatch(setUserDetails(data));
-              });
-              navigate("/", { replace: true });
-            });
-          }
-        });
-      })
-    }else{
-      dispatch(alertWarning("Password doesn't match"));
+      try {
+        const userCred = await signInWithEmailAndPassword(firebaseAuth, userEmail, password);
+        if (userCred?.user) {
+          dispatch(setUserDetails(userCred.user));
+          navigate("/", { replace: true });
+        }
+      } catch (error) {
+        console.error("Email Login Error:", error);
+        dispatch(alertWarning("Invalid Email or Password"));
+      }
+    } else {
+      dispatch(alertWarning("Fields cannot be empty"));
     }
   };
-
   return (
     <div className="w-screen h-screen relative overflow-hidden">
       {/*Background image */}
@@ -136,7 +148,6 @@ const Login = () => {
             type="email"
             isSignUp={isSignUp}
           />
-
           <LoginInput
             placeHolder={"Password Here"}
             icon={<FaLock className="text-xl text-darkOverlay" />}

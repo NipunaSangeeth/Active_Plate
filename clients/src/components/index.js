@@ -9,4 +9,6 @@ export { default as ExerciseOnly } from "./ExerciseOnlyComponent/ExerciseOnly";
 export {default as TheCombined } from "./CombinedComponent/TheCombined";
 export {default as AboutUspart } from "./AboutUspart/AboutUspart";
 export {default as CoppyRight } from "./CoppyRight";
+export {default as MedicalReport } from "./MedicalReportComponent/MedicalReport";
 // export {default as Combined } from "./CombinedComponent/Combined";
+

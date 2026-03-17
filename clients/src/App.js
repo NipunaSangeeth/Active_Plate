@@ -9,7 +9,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setUserDetails } from './context/actions/userActions';
 import { motion } from 'framer-motion';
 import { fadeInOut } from './animations';
-import { AboutUspart, Alert, ExerciseOnly, MainLoader, MealPlan, ServicesList, TheCombined } from './components';
+import { AboutUspart, Alert, ExerciseOnly, MainLoader, MealPlan, MedicalReport, ServicesList, TheCombined } from './components';
 import { Combined } from './assets';
 
 const App = () => {
@@ -19,17 +19,14 @@ const App = () => {
 
   const dispatch = useDispatch()
 
+  // Restore/Preserve User Authentication Session on page loading or refreshes
   useEffect(() => {
     setIsLoading(true);
     firebaseAuth.onAuthStateChanged((cred) => {
       if (cred) {
-        cred.getIdToken().then((token) => {
-          validateUserJWTToken(token).then((data) => {
-            dispatch(setUserDetails(data));
-          });
-        });
+        dispatch(setUserDetails(cred));
       }
-      setInterval(() => {
+      setTimeout(() => {
         setIsLoading(false);
       }, 3000);
     });
@@ -50,6 +47,7 @@ const App = () => {
         <Route path="/TheCombined" element={<TheCombined/>} /> 
         <Route path="/Login" element={<Login/>} />
         <Route path="/dashboard/*" element={<Dashboard/>} />
+        <Route path="/report" element={<MedicalReport />} />
       </Routes>
 
       {alert?.type && <Alert type={alert?.type} message={alert?.message}/>}

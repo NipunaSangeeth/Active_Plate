@@ -2,9 +2,15 @@ import React, { useState } from "react";
 import { LogingBg2, Logo_01, Logo_02 } from "../../assets";
 import LoginInput from "../Logininput";
 import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { alertSuccess, alertWarning, alertNull } from "../../context/actions/alertActionss";
+import { db } from "../../config/firebase.config";
+import { collection, addDoc } from "firebase/firestore";
 
 function ExerciseOnly() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state.user);
   const [userEmail, setuserEmail] = useState("");
   const [gender, setGender] = useState("");
   const [userAge, setuserAge] = useState("");
@@ -33,7 +39,51 @@ function ExerciseOnly() {
     setuserlocation(event.target.value);
   };
 
-  const handlesubmitClick = () => {};
+  /**
+   * Submit Exercise Plan data to Firestore "exercisePlans" Collection
+   * Performs basic validation before saving asynchronously.
+   */
+  const handlesubmitClick = async () => {
+    // Validate ALL fields are filled
+    if (!gender || !userAge || !userExperience || !userIllnesses || !userFitness || !userlocation || !userMotivation || !userTime || !userStress || !userInjury || !userHealth || !userContact || !userSleep_Pattern) {
+      dispatch(alertWarning("Please fill in all details before submitting."));
+      setTimeout(() => dispatch(alertNull()), 4000);
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, "exercisePlans"), {
+        gender,
+        userAge,
+        userExperience,
+        userIllnesses,
+        userFitness,
+        userlocation,
+        userMotivation, // Motivation
+        userTime, // Time
+        userHealth, // Health history
+        userStress, // Stress levels
+        userContact, // Emergency Contact
+        userInjury, // Injury history
+        userSleep_Pattern, // Sleep patterns
+        submittedAt: new Date()
+      });
+      dispatch(alertSuccess("Exercise Plan submitted successfully!"));
+      setTimeout(() => {
+        dispatch(alertNull());
+        navigate("/report", { 
+          state: { 
+            serviceType: "ExerciseOnly", 
+            formData: { gender, userAge, userExperience, userIllnesses, userFitness, userlocation, userMotivation, userTime, userStress, userInjury, userHealth, userContact, userSleep_Pattern } 
+          } 
+        });
+      }, 2000);
+    } catch (error) {
+      console.error("Error saving document: ", error);
+      dispatch(alertWarning("Failed to submit. Please try again."));
+      setTimeout(() => dispatch(alertNull()), 4000);
+    }
+  };
   return (
     <div className="w-screen min-h-screen relative overflow-x-hidden overflow-y-auto flex flex-col bg-black">
       {/* Absolute Background image */}
@@ -46,10 +96,16 @@ function ExerciseOnly() {
         <div className="flex justify-between items-start w-full">
           {/* Static Greeting floating top left */}
           <div className="flex items-center gap-3">
-             <div className="w-11 h-11 rounded-full bg-black/90 flex items-center justify-center text-white text-xl shadow-lg cursor-pointer">
-               👤
+             <div className="w-11 h-11 rounded-full bg-black/90 flex items-center justify-center text-white text-xl shadow-lg cursor-pointer overflow-hidden">
+               {user?.photoURL ? (
+                 <img src={user.photoURL} alt="pro-pic" className="w-full h-full object-cover" />
+               ) : (
+                 "👤"
+               )}
              </div>
-             <span className="text-black font-extrabold text-xl tracking-tight">Hi,User</span>
+             <span className="text-black font-extrabold text-xl tracking-tight">
+               Hi, {user?.displayName || "User"}
+             </span>
           </div>
 
           {/* Large Circular Logo top right */}
